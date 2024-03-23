@@ -1,89 +1,112 @@
-import { useState } from 'react'
+import { useState,useEffect} from 'react'
 import './App.css'
-import { useEffect } from 'react';
+import axios from "axios"
 
 function App() {
-  const [todoInput, setTodoInput] = useState('')
+  const [todos,setTodo]=useState([])
+  const [Task,setTask]=useState("")
+  const [page,nextPage]=useState(1)
+  const [loading,setLoading]=useState(false)
+    
+    const Loading=()=>{
+      return(
+        <h1>Loading.....</h1>
+      )
 
-  const addTodo = () =>{
-    const id = Math.floor(Math.random() + Date.now());
-    fetch('http://localhost:3000/api/todos', {
-      method: 'POST',
-      headers: {
-          'Accept': 'application/json',
-          'Content-Type': 'application/json'
-      },
-      body: JSON.stringify({
-        id,
-        title:todoInput
-      })
-  })
-     .then(response => response.json())
-     .then(response => setFetchDataFlag(flag=>!flag))
-  }
+    }
+    useEffect(()=>{
 
-  const [todosList, setTodosList] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [pageNum, setPageNum]=useState(1);
-  const [fetchDataFlag, setFetchDataFlag]=useState(false);
+      async function getData(){
+        try{
+          setLoading(true)
+          const res = await axios.get(`https://jsonplaceholder.typicode.com/todos?_limit=10&_page=${page}`)
+          setTodo(res.data)
+          setLoading(false)
+        }
+        catch(error){
+          console.log(`error in getting data`,error)
 
-  useEffect(()=>{
-    fetch(`http://localhost:3000/api/todos?_limit=10&_page=${pageNum}`).then(resp=>resp.json())
-    .then(resp=>{
-      setTodosList(resp);
-      setLoading(false);
-    })
-  }, [pageNum, fetchDataFlag]);
-
-  const deleteTodoItem = (id)=>{
-    fetch(`http://localhost:3000/api/todos/${id}`, {
-      method: 'DELETE',
-      headers: {
-        'Content-Type': 'application/json'
+        }
       }
-    })
-      .then(response => {
-        console.log(response)
-       setFetchDataFlag(flag=>!flag);
-      })
-      .catch(error => {
-        console.error('Error:', error);
-      });
-    
+      getData()
+    },[page])
+
+     async function toggleStatus(id){
+      try{
+        const updatedTools=todos.map((todo)=>(
+         todo.id==id?{...todo,completed:!todo.completed}:todo
+        ))
+        setTodo(updatedTools);
+        await axios.patch(`https://jsonplaceholder.typicode.com/todos/${id}`,
+        {
+          completed:!todos.find((todo)=>todo.id==id).completed,
+        })}
+        catch(error){
+          console.log(error)
+        }
+
+     }
+        async function postData(){
+          try{
+            const res = await axios.post(`https://jsonplaceholder.typicode.com/todos`,
+            {
+              title:Task,
+              completed:false,
+            })
+            setTodo([...todos,res.data])
+
+          }
+          catch{
+
+          }
+        }
+
+  const Pagination=()=>{
+    return(
+      <>
+      <button
+      onClick={()=>nextPage(page-1)}
+      >previous</button>Page :{page}
+      <button
+      onClick={()=>nextPage(page+1)}
+      >Next</button>
+      </>
+    )
+  }
+  const delTodo=(id)=>{
+    const updatedList=todos.filter((todo)=>todo.id!==id)
+    setTodo(updatedList)
   }
 
-  const updateTodoItem = (id) =>{
-    
-  }
+  return(
+    <>
+    <h1>Todo App</h1>
+    <input 
+    type="text" 
+    onChange={(e)=>setTask(e.target.value)}
+    />
+    <button
+    onClick={postData}
+    >add Task</button>
+    {loading && <Loading/>}
+    <div className="list-container">
+        {todos.map((e)=>(
+          <div>
+          <h2><span>Title : </span>{e.title}</h2>
+          <span>Status :</span>
+          <button
+          onClick={()=>toggleStatus(e.id)}
+          >{e.completed?"yes":"no"}</button>
+          <button
+           onClick={()=>delTodo(e.id)}
+          >Delete</button>
+          </div>
 
-  return (
-    <div>
-      <div className='input'>
-        <input type='text' value={todoInput} onChange={(e)=>setTodoInput(e.target.value)} placeholder='Add todo' />
-        <button onClick={addTodo}>Add</button>
+        ))}
       </div>
-      <div className='show-data'>
-        <h1>Todos list</h1>
-        {loading?'Loading...':''}
-          {todosList.map((todo, index)=>
-           <div key={index} className='todo-item'>
-            <div>
-              <span>{((pageNum-1)*10)+(index+1)}</span>
-              <span>{todo.title}</span>  
-            </div>
-            <div>
-              <button onClick={()=>deleteTodoItem(todo.id)}>Delete</button>
-              <button onClick={()=>updateTodoItem(todo.id)}>Update</button>
-            </div>
-           </div>
-          )}
-      </div>
-      <div className='pageBtn'>
-        <button disabled={pageNum==1} onClick={()=>setPageNum(pageNum=>pageNum-1)}>&lt; prev</button>
-        <button disabled={todosList.length<10} onClick={()=>setPageNum(pageNum=>pageNum+1)}>next &gt; </button>
-      </div>
-    </div>
+      <Pagination/>
+    </>
   )
+  
 }
-
 export default App
