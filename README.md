@@ -1,19 +1,1 @@
 # Revision
-src/
-  components/
-    TodoList.js
-    TodoItem.js
-    LoginForm.js
-  store/
-    actions/
-      todoActions.js
-      authActions.js
-      themeActions.js
-    reducers/
-      todoReducer.js
-      authReducer.js
-      themeReducer.js
-    actionTypes.js
-    configureStore.js
-  App.js
-  index.js
